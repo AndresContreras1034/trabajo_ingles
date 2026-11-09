@@ -35,6 +35,33 @@ const phases = [
     },
     reflection: 'What do you think happened?',
     choices: ['He spent too much on food.', 'He bought something expensive.', 'He made several small purchases.', "He doesn't know yet."],
+    reflectionFeedback: [
+      {
+        tone: 'close',
+        verdict: 'Partly right',
+        why: 'Food is part of the story: Andrés eats with his classmates and buys snacks. But he says he didn’t buy anything expensive, so food alone probably doesn’t explain all the missing money.',
+        clue: 'He ate with his classmates and bought a few snacks.',
+      },
+      {
+        tone: 'off',
+        verdict: 'Not very likely',
+        why: 'Andrés says he doesn’t remember buying anything expensive. If there were one big purchase, he would probably remember it. Look for a different clue.',
+        clue: 'He doesn’t remember buying anything expensive.',
+      },
+      {
+        tone: 'best',
+        verdict: 'Strong prediction',
+        why: 'It fits the clues: transport, coffee and snacks feel small, but small amounts add up. That is why Andrés opens his bank history and checks every transaction. Keep reading to check your idea.',
+        clue: 'University, TransMilenio, lunch with classmates and a few snacks.',
+      },
+      {
+        tone: 'honest',
+        verdict: 'Honest answer',
+        why: 'That’s fine, Andrés doesn’t know yet either! But try to guess anyway: good readers use the clues to make a prediction, then read to check it.',
+        clue: 'He decides to investigate his expenses.',
+      },
+    ],
+    reflectionTip: 'To make a prediction, use “I think + subject + verb” or “Maybe + subject + verb”. Then look for clues in the text to check your idea.',
   },
   {
     id: 2,
@@ -362,7 +389,37 @@ function QuizCard({ id, question, selected, result, onSelect }) {
 }
 
 function Reflection({ phase, answers, setAnswers }) {
-  return <section className="reflection-card"><span className="section-kicker">PAUSE & THINK</span><h2>{phase.reflection}</h2><p className="box-help">Make a prediction before the next part of the story reveals what happened.</p><div className="reflection-options">{phase.choices.map((choice) => <button type="button" key={choice} className={answers.reflection === choice ? 'picked' : ''} onClick={() => setAnswers((current) => ({ ...current, reflection: choice }))}>{choice}<span>→</span></button>)}</div></section>
+  const pickedIndex = phase.choices.indexOf(answers.reflection)
+  const info = pickedIndex >= 0 ? phase.reflectionFeedback?.[pickedIndex] : null
+  const lowerFirst = (text) => text.charAt(0).toLowerCase() + text.slice(1)
+
+  return (
+    <section className="reflection-card">
+      <span className="section-kicker">PAUSE & THINK</span>
+      <h2>{phase.reflection}</h2>
+      <p className="box-help">Make a prediction before the next part of the story reveals what happened.</p>
+      <div className="reflection-options">
+        {phase.choices.map((choice) => {
+          const isPicked = answers.reflection === choice
+          const tone = isPicked && info ? info.tone : ''
+          return (
+            <button type="button" key={choice} className={`${isPicked ? 'picked' : ''} ${tone}`} onClick={() => setAnswers((current) => ({ ...current, reflection: choice }))}>
+              {choice}<span>{isPicked ? '✓' : '→'}</span>
+            </button>
+          )
+        })}
+      </div>
+      {info && (
+        <div className={`reflection-feedback ${info.tone}`} key={pickedIndex}>
+          <span className="verdict">{info.verdict}</span>
+          <p className="prediction">I think {lowerFirst(answers.reflection)}</p>
+          <p>{info.why}</p>
+          <div className="clue"><small>CLUE IN THE STORY</small>{info.clue}</div>
+          {phase.reflectionTip && <p className="lang-tip"><b>Language tip</b>{phase.reflectionTip}</p>}
+        </div>
+      )}
+    </section>
+  )
 }
 
 function Calculation({ phase, answers, setAnswers }) {
