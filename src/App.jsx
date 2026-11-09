@@ -170,6 +170,17 @@ const phases = [
   },
 ]
 
+const TOTAL = 100000
+const toNum = (value) => Number(String(value).replace(/,/g, ''))
+const finalMathOk = (answers) => Boolean(answers.spend && answers.left) && TOTAL - toNum(answers.spend) === toNum(answers.left)
+const FINAL_KEYS = ['spend', 'left', 'save', 'need', 'decision']
+const AMOUNTS = ['20,000', '40,000', '60,000', '80,000']
+const DECISIONS = [
+  ['Save most of it', '↗'],
+  ['Spend some and save the rest', '⇄'],
+  ['Use it for something important', '★'],
+]
+
 function App() {
   const [phaseIndex, setPhaseIndex] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -179,9 +190,11 @@ function App() {
   const [showResults, setShowResults] = useState(false)
   const phase = phases[phaseIndex]
   const isLast = phaseIndex === phases.length - 1
-  const score = useMemo(() => Object.values(submitted).filter(Boolean).length, [submitted])
-  const questionCount = phases.filter((item) => item.question || item.check).length
-  const answeredCount = Object.keys(submitted).length
+  const finalDone = FINAL_KEYS.every((key) => finalAnswers[key])
+  const finalOk = finalMathOk(finalAnswers)
+  const score = useMemo(() => Object.values(submitted).filter(Boolean).length + (finalOk ? 1 : 0), [submitted, finalOk])
+  const questionCount = phases.reduce((count, item) => count + (item.question ? 1 : 0) + (item.check ? 1 : 0), 0) + 1
+  const answeredCount = Object.keys(submitted).length + (finalAnswers.spend && finalAnswers.left ? 1 : 0)
   const progress = Math.round(((phaseIndex + (isLast && finalAnswers.decision ? 1 : 0)) / phases.length) * 100)
 
   const submitAnswer = (key, value, correct) => {
@@ -210,7 +223,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell tone-${phase.tone}`}>
       <header className="topbar">
         <a className="brand" href="#top" onClick={restart} aria-label="Money Lab home">
           <span className="brand-mark">$</span>
@@ -270,7 +283,7 @@ function App() {
               <FinalChallenge answers={finalAnswers} setAnswers={setFinalAnswers} />
             )
           ) : (
-            <div className="lesson-body">
+            <div className="lesson-body" key={phase.id}>
               <ReadingBlock phase={phase} />
               {phase.question && (
                 <QuizCard
@@ -306,7 +319,7 @@ function App() {
             ) : showResults ? (
               <button type="button" className="primary-button" onClick={restart}>Start again <span>↻</span></button>
             ) : (
-              <button type="button" className="primary-button" onClick={() => setShowResults(true)}>See my score <span>→</span></button>
+              <button type="button" className="primary-button" onClick={() => setShowResults(true)} disabled={!finalDone}>See my score <span>→</span></button>
             )}
           </div>
         </section>
@@ -372,8 +385,32 @@ function MoneyMath({ phase }) {
 
 function FinalChallenge({ answers, setAnswers }) {
   const update = (key, value) => setAnswers((current) => ({ ...current, [key]: value }))
-  const choiceGroup = (key, options) => <div className="choice-grid">{options.map((option) => <button type="button" key={option} className={`choice-chip ${answers[key] === option ? 'chosen' : ''}`} onClick={() => update(key, option)}>{option}<span>{answers[key] === option ? '✓' : '+'}</span></button>)}</div>
-  return <div className="final-challenge"><div className="final-intro"><span className="big-star">✦</span><h2>Now it’s your turn.</h2><p>Imagine you receive <strong>100,000 COP</strong> tomorrow. Build your plan with the options below.</p></div><div className="sentence-builder"><div className="builder-row"><p>If I spend...</p>{choiceGroup('spend', ['20,000', '40,000', '60,000', '80,000'])}<p>I will have...</p>{choiceGroup('left', ['20,000', '40,000', '60,000', '80,000'])}<span className="unit">COP left.</span></div><div className="builder-row"><p>If I save some of the money, I will...</p>{choiceGroup('save', ['have money later', 'reach an important goal', 'feel more relaxed'])}</div><div className="builder-row"><p>If I buy something I don’t need, I will...</p>{choiceGroup('need', ['regret it later', 'spend too much', 'enjoy my purchase'])}</div></div><div className="decision-picker"><span className="section-kicker">FINAL QUESTION</span><h2>What would you do with the 100,000 COP?</h2><p>Choose the plan that best matches your decision.</p>{choiceGroup('decision', ['Save most of it', 'Spend some and save the rest', 'Use it for something important'])}</div></div>
+  const done = FINAL_KEYS.filter((key) => answers[key]).length
+  const mathPicked = Boolean(answers.spend && answers.left)
+  const mathOk = finalMathOk(answers)
+  const chips = (key, options, state = '') => (
+    <div className="choice-grid">
+      {options.map((option) => (
+        <button type="button" key={option} className={`choice-chip ${answers[key] === option ? `chosen ${state}` : ''}`} onClick={() => update(key, option)}>
+          {option}<span>{answers[key] === option ? '✓' : '+'}</span>
+        </button>
+      ))}
+    </div>
+  )
+
+  return (
+    <div className="final-challenge">
+      <div className="final-intro"><div><span className="big-star">✦</span><h2>Now it’s your turn.</h2><p>Imagine you receive <strong>100,000 COP</strong> tomorrow. Build your plan with the options below.</p></div><div className="wallet"><small>Your plan · {done}/5</small><strong>100,000 <i>COP</i></strong><div className="wallet-steps" aria-hidden="true">{FINAL_KEYS.map((key) => <span key={key} className={answers[key] ? 'on' : ''} />)}</div></div></div>
+      <div className="sentence-builder">
+        <div className={`builder-row ${answers.spend ? 'ok' : ''}`}><span className="row-num">1</span><p>If I spend <em>{answers.spend || '______'}</em> COP...</p>{chips('spend', AMOUNTS)}</div>
+        <div className={`builder-row ${mathOk ? 'ok' : ''}`}><span className="row-num">2</span><p>...I will have <em>{answers.left || '______'}</em> COP left.</p>{chips('left', AMOUNTS, mathPicked ? (mathOk ? 'valid' : 'invalid') : '')}{mathPicked && <p className={`feedback-line ${mathOk ? 'valid' : 'invalid'}`}>{mathOk ? `Correct ✓  100,000 − ${answers.spend} = ${answers.left}` : 'Not quite. Start from 100,000 and subtract what you spend.'}</p>}</div>
+        <div className={`builder-row ${answers.save ? 'ok' : ''}`}><span className="row-num">3</span><p>If I save some of the money, I will <em>{answers.save || '______'}</em>.</p>{chips('save', ['have money later', 'reach an important goal', 'feel more relaxed'])}</div>
+        <div className={`builder-row ${answers.need ? 'ok' : ''}`}><span className="row-num">4</span><p>If I buy something I don’t need, I will <em>{answers.need || '______'}</em>.</p>{chips('need', ['regret it later', 'spend too much', 'enjoy my purchase'])}</div>
+      </div>
+      <div className="decision-picker"><span className="section-kicker">FINAL QUESTION</span><h2>What would you do with the 100,000 COP?</h2><p>Choose the plan that best matches your decision.</p><div className="decision-grid">{DECISIONS.map(([label, icon]) => <button type="button" key={label} className={`decision-card ${answers.decision === label ? 'chosen' : ''}`} onClick={() => update('decision', label)}><i>{icon}</i>{label}</button>)}</div></div>
+      {done === FINAL_KEYS.length && <div className="plan-card"><h3>Your money plan</h3><p>If I spend <strong>{answers.spend} COP</strong>, I will have <strong>{answers.left} COP</strong> left.</p><p>If I save some of the money, I will <strong>{answers.save}</strong>.</p><p>If I buy something I don’t need, I will <strong>{answers.need}</strong>.</p><p>My decision: <strong>{answers.decision}</strong></p><span className="plan-stamp">Plan ready ✓</span></div>}
+    </div>
+  )
 }
 
 function Results({ score, total, onRestart }) {
