@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import './App.css'
+import './theme.css'
 
 const phases = [
   {
@@ -105,7 +106,10 @@ const phases = [
       answer: 3,
       explanation: 'The discount persuaded him to make an unplanned purchase.',
     },
-    openPrompt: 'Do you think a discount always means you are saving money? Explain in one or two sentences.',
+    decisionTip: {
+      title: 'A discount is not always a saving.',
+      text: 'You save money only when you were already planning to buy the product. If the discount changes your decision, it can become an unplanned expense.',
+    },
   },
   {
     id: 4,
@@ -172,6 +176,7 @@ function App() {
   const [submitted, setSubmitted] = useState({})
   const [openAnswers, setOpenAnswers] = useState({})
   const [finalAnswers, setFinalAnswers] = useState({ spend: '', left: '', save: '', need: '', decision: '' })
+  const [showResults, setShowResults] = useState(false)
   const phase = phases[phaseIndex]
   const isLast = phaseIndex === phases.length - 1
   const score = useMemo(() => Object.values(submitted).filter(Boolean).length, [submitted])
@@ -200,6 +205,7 @@ function App() {
     setSubmitted({})
     setOpenAnswers({})
     setFinalAnswers({ spend: '', left: '', save: '', need: '', decision: '' })
+    setShowResults(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -258,7 +264,11 @@ function App() {
           </div>
 
           {phase.final ? (
-            <FinalChallenge answers={finalAnswers} setAnswers={setFinalAnswers} />
+            showResults ? (
+              <Results score={score} total={questionCount} onRestart={restart} />
+            ) : (
+              <FinalChallenge answers={finalAnswers} setAnswers={setFinalAnswers} />
+            )
           ) : (
             <div className="lesson-body">
               <ReadingBlock phase={phase} />
@@ -282,7 +292,7 @@ function App() {
                   onSelect={(value) => submitAnswer('check-expenses', value, phase.check.answer)}
                 />
               )}
-              {phase.openPrompt && <OpenResponse prompt={phase.openPrompt} value={openAnswers.open} onChange={(value) => setOpenAnswers((current) => ({ ...current, open: value }))} />}
+              {phase.decisionTip && <DecisionTip tip={phase.decisionTip} />}
               {phase.structure && <StructureCard structure={phase.structure} />}
               {phase.mathItems && <MoneyMath phase={phase} />}
             </div>
@@ -293,8 +303,10 @@ function App() {
             <span className="footer-status">{answeredCount} of {questionCount} checks complete</span>
             {!isLast ? (
               <button type="button" className="primary-button" onClick={nextPhase}>Continue <span>→</span></button>
-            ) : (
+            ) : showResults ? (
               <button type="button" className="primary-button" onClick={restart}>Start again <span>↻</span></button>
+            ) : (
+              <button type="button" className="primary-button" onClick={() => setShowResults(true)}>See my score <span>→</span></button>
             )}
           </div>
         </section>
@@ -305,7 +317,6 @@ function App() {
         <span>Built for better decisions <b>✦</b></span>
       </footer>
 
-      {isLast && <div className="score-toast" role="status"><span>✦</span><div><strong>{score} / {questionCount} correct</strong><small>Nice work — keep thinking ahead.</small></div></div>}
     </div>
   )
 }
@@ -345,8 +356,8 @@ function Calculation({ phase, answers, setAnswers }) {
   return <section className="calculation-card"><div><span className="section-kicker">CALCULATE</span><h2>{phase.calculation.prompt}</h2><p className="math-hint">{phase.calculation.hint}</p></div><div className="answer-field"><input inputMode="numeric" placeholder="64,000" value={answers.calculation || ''} onChange={(event) => setAnswers((current) => ({ ...current, calculation: event.target.value.replace(/\D/g, '') }))} /><span>COP</span>{answers.calculation && <small className={isCorrect ? 'valid' : 'invalid'}>{isCorrect ? '✓ Correct' : 'Check your total'}</small>}</div></section>
 }
 
-function OpenResponse({ prompt, value, onChange }) {
-  return <section className="open-card"><span className="section-kicker">YOUR THOUGHTS</span><h2>{prompt}</h2><textarea value={value || ''} onChange={(event) => onChange(event.target.value)} placeholder="Write your answer here..." rows="3" /><span className="character-count">{(value || '').length} / 240</span></section>
+function DecisionTip({ tip }) {
+  return <section className="decision-tip"><span className="tip-icon">✦</span><div><span className="section-kicker">MONEY INSIGHT</span><h2>{tip.title}</h2><p>{tip.text}</p></div></section>
 }
 
 function StructureCard({ structure }) {
@@ -360,6 +371,24 @@ function MoneyMath({ phase }) {
 function FinalChallenge({ answers, setAnswers }) {
   const update = (key, value) => setAnswers((current) => ({ ...current, [key]: value }))
   return <div className="final-challenge"><div className="final-intro"><span className="big-star">✦</span><h2>Now it’s your turn.</h2><p>Imagine you receive <strong>100,000 COP</strong> tomorrow. Use the First Conditional to make a plan.</p></div><div className="sentence-builder"><p>If I spend <input aria-label="amount spent" value={answers.spend} onChange={(event) => update('spend', event.target.value)} placeholder="____" /> COP, I will have <input aria-label="amount left" value={answers.left} onChange={(event) => update('left', event.target.value)} placeholder="____" /> COP left.</p><p>If I save some of the money, I will <input aria-label="saving result" className="long-input" value={answers.save} onChange={(event) => update('save', event.target.value)} placeholder="________________" />.</p><p>If I buy something I don’t really need, I will <input aria-label="unnecessary purchase result" className="long-input" value={answers.need} onChange={(event) => update('need', event.target.value)} placeholder="________________" />.</p></div><div className="open-card final-response"><span className="section-kicker">FINAL QUESTION</span><h2>What would you do with the 100,000 COP?</h2><p>Write 2–3 sentences using the First Conditional.</p><textarea value={answers.decision} onChange={(event) => update('decision', event.target.value)} placeholder="If I receive 100,000 COP, I will..." rows="5" /><span className="character-count">{answers.decision.length} / 400</span></div></div>
+}
+
+function Results({ score, total, onRestart }) {
+  const percentage = Math.round((score / total) * 100)
+  const message = percentage === 100 ? 'Excellent control!' : percentage >= 75 ? 'Great progress!' : percentage >= 50 ? 'Keep building your confidence.' : 'Every mistake is a step forward.'
+  return <section className="results-card">
+    <div className="results-orbit" aria-hidden="true"><span>✦</span></div>
+    <span className="section-kicker">LESSON COMPLETE</span>
+    <h2>You made it to the finish line.</h2>
+    <p className="results-message">{message} You practiced reading, money vocabulary and the First Conditional.</p>
+    <div className="score-panel">
+      <div className="score-number">{percentage}<small>%</small></div>
+      <div className="score-detail"><strong>{score} of {total} answers correct</strong><span>Understanding score</span><div className="score-bar"><i style={{ width: `${percentage}%` }} /></div></div>
+    </div>
+    <div className="results-grid"><div><span>✓</span><strong>Reading</strong><small>Story comprehension</small></div><div><span>↗</span><strong>Grammar</strong><small>First Conditional</small></div><div><span>$</span><strong>Money mindset</strong><small>Better decisions</small></div></div>
+    <p className="results-quote">“If I plan my expenses, I will have more control over my money.”</p>
+    <button type="button" className="results-restart" onClick={onRestart}>Try the lesson again <span>↻</span></button>
+  </section>
 }
 
 export default App
