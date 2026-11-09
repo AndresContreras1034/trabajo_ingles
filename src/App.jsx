@@ -338,6 +338,7 @@ function QuizCard({ id, question, selected, result, onSelect }) {
     <section className="activity-card">
       <div className="activity-top"><span className="activity-number">?</span><span className="section-kicker">{question.label}</span>{result !== undefined && <span className={`result-chip ${result ? 'correct' : 'try-again'}`}>{result ? 'Correct ✓' : 'Try again'}</span>}</div>
       <h2>{question.prompt}</h2>
+      <p className="box-help">Read the question carefully, then choose the answer that the story supports.</p>
       <div className="options">
         {question.options.map((option, index) => <button type="button" key={option} className={`option ${selected === index ? 'selected' : ''} ${selected === index && result === true ? 'correct' : ''} ${selected === index && result === false ? 'incorrect' : ''}`} onClick={() => onSelect(index)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}
       </div>
@@ -348,13 +349,13 @@ function QuizCard({ id, question, selected, result, onSelect }) {
 }
 
 function Reflection({ phase, answers, setAnswers }) {
-  return <section className="reflection-card"><span className="section-kicker">PAUSE & THINK</span><h2>{phase.reflection}</h2><div className="reflection-options">{phase.choices.map((choice) => <button type="button" key={choice} className={answers.reflection === choice ? 'picked' : ''} onClick={() => setAnswers((current) => ({ ...current, reflection: choice }))}>{choice}<span>→</span></button>)}</div></section>
+  return <section className="reflection-card"><span className="section-kicker">PAUSE & THINK</span><h2>{phase.reflection}</h2><p className="box-help">Make a prediction before the next part of the story reveals what happened.</p><div className="reflection-options">{phase.choices.map((choice) => <button type="button" key={choice} className={answers.reflection === choice ? 'picked' : ''} onClick={() => setAnswers((current) => ({ ...current, reflection: choice }))}>{choice}<span>→</span></button>)}</div></section>
 }
 
 function Calculation({ phase, answers, setAnswers }) {
   const options = ['49,000', '64,000', '72,000', '85,000']
   const isCorrect = answers.calculation === phase.calculation.answer
-  return <section className="calculation-card"><div><span className="section-kicker">CALCULATE</span><h2>{phase.calculation.prompt}</h2><p className="math-hint">{phase.calculation.hint}</p></div><div className="number-options">{options.map((option) => <button type="button" key={option} className={answers.calculation === option ? `number-option ${isCorrect ? 'valid-option' : 'invalid-option'}` : 'number-option'} onClick={() => setAnswers((current) => ({ ...current, calculation: option }))}>{option} <small>COP</small></button>)}</div></section>
+  return <section className="calculation-card"><div><span className="section-kicker">CALCULATE</span><h2>{phase.calculation.prompt}</h2><p className="box-help">Add Monday, Tuesday and Wednesday. Select the total you calculate.</p><p className="math-hint">{phase.calculation.hint}</p></div><div className="number-options">{options.map((option) => <button type="button" key={option} className={answers.calculation === option ? `number-option ${isCorrect ? 'valid-option' : 'invalid-option'}` : 'number-option'} onClick={() => setAnswers((current) => ({ ...current, calculation: option }))}>{option} <small>COP</small></button>)}</div></section>
 }
 
 function DecisionTip({ tip }) {
@@ -362,11 +363,11 @@ function DecisionTip({ tip }) {
 }
 
 function StructureCard({ structure }) {
-  return <section className="structure-card"><span className="section-kicker">SPOT THE STRUCTURE</span><h2>First Conditional</h2><div className="sentence"><span className="condition">{structure.condition}</span><span className="comma">,</span><span className="result">{structure.result}</span></div><div className="structure-labels"><span><i className="condition-dot" /> CONDITION</span><span><i className="result-dot" /> RESULT</span></div></section>
+  return <section className="structure-card"><span className="section-kicker">SPOT THE STRUCTURE</span><h2>First Conditional</h2><p className="box-help">The condition is the possible situation. The result is what will happen because of it.</p><div className="sentence"><span className="condition">{structure.condition}</span><span className="comma">,</span><span className="result">{structure.result}</span></div><div className="structure-labels"><span><i className="condition-dot" /> CONDITION</span><span><i className="result-dot" /> RESULT</span></div></section>
 }
 
 function MoneyMath({ phase }) {
-  return <section className="money-card"><span className="section-kicker">{phase.mathPrompt}</span><div className="money-rows">{phase.mathItems.map(([spent, left]) => <div key={spent}><span>{spent}</span><b>→</b><strong>{left}</strong></div>)}</div></section>
+  return <section className="money-card"><span className="section-kicker">{phase.mathPrompt}</span><h2>See how each choice changes the balance.</h2><p className="money-help">Use these examples to compare spending now with keeping money for later.</p><div className="money-rows">{phase.mathItems.map(([spent, left]) => <div key={spent}><span>{spent}</span><b>→</b><strong>{left}</strong></div>)}</div></section>
 }
 
 function FinalChallenge({ answers, setAnswers }) {
@@ -382,7 +383,7 @@ function Results({ score, total, onRestart }) {
     <div className="results-orbit" aria-hidden="true"><span>✦</span></div>
     <span className="section-kicker">LESSON COMPLETE</span>
     <h2>You made it to the finish line.</h2>
-    <p className="results-message">{message} You practiced reading, money vocabulary and the First Conditional.</p>
+    <p className="results-message">{message} This score reflects your comprehension checks. Your final choices are practice for making thoughtful decisions in English.</p>
     <div className="score-panel">
       <div className="score-number">{percentage}<small>%</small></div>
       <div className="score-detail"><strong>{score} of {total} answers correct</strong><span>Understanding score</span><div className="score-bar"><i style={{ width: `${percentage}%` }} /></div></div>
