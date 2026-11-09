@@ -15,6 +15,6 @@ npm run dev
 npm run build
 ```
 
-The project is configured for the `trabajo_ingles` GitHub Pages base path. Every push to `main` builds and deploys `dist` through [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml).
+The project is configured for the `trabajo_ingles` GitHub Pages base path. To publish from the `main` branch, set GitHub Pages to **Deploy from a branch → `main` → `/docs`**. The generated site is kept in [`docs/`](./docs/). Alternatively, select **GitHub Actions** and use [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml).
 
 Live site: <https://andrescontreras1034.github.io/trabajo_ingles/>
